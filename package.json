@@ -34,6 +34,7 @@
     "ajv": "^4.11.8",
     "basic-auth": "^2.0.1",
     "body-parser": "^1.15.2",
+    "connect-flash": "^0.1.1",
     "debug": "^3.2.7",
     "dotenv": "^16.4.5",
     "express": "^4.14.1",

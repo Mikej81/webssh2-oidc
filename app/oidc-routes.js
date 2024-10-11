@@ -5,6 +5,7 @@
 require('dotenv').config(); // Ensure this is at the top if you're using dotenv in local development
 
 const passport = require('passport');
+const flash = require('connect-flash');
 const OidcStrategy = require('passport-openidconnect').Strategy;
 const jwt = require('jsonwebtoken');
 
@@ -20,7 +21,6 @@ const oidcConfig = {
 };
 
 passport.use(new OidcStrategy(oidcConfig, (issuer, sub, profile, accessToken, refreshToken, done) => {
-    // Simulate a database call to find or create a user, this would be some PUA boi magic maybe
     findOrCreateUser({ issuer, sub, profile }, (err, user) => {
         if (err) {
             console.error('Error during findOrCreateUser:', err);
@@ -28,7 +28,12 @@ passport.use(new OidcStrategy(oidcConfig, (issuer, sub, profile, accessToken, re
         }
         return done(null, user);
     });
-}));
+}), (error, user, info) => {
+    if (error) {
+        console.log('Error obtaining access token:', error);
+        return done(error);
+    }
+});
 
 
 const express = require("express")
@@ -70,6 +75,9 @@ router.get('/login', (req, res, next) => {
     }
     passport.authenticate('openidconnect')(req, res, next);
 });
+
+router.use(flash());
+
 router.get('/callback',
     passport.authenticate('openidconnect', {
         failureRedirect: '/oidc/login-failure',

@@ -1,9 +1,44 @@
 // server
 // app/routes.js
 
+//coleman oidc
+require('dotenv').config(); // Ensure this is at the top if you're using dotenv in local development
+
+const passport = require('passport');
+const OidcStrategy = require('passport-openidconnect').Strategy;
+const jwt = require('jsonwebtoken');
+
+const oidcConfig = {
+  issuer: process.env.OIDC_ISSUER_URL,
+  authorizationURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/auth`,
+  tokenURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/token`,
+  userInfoURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/userinfo`,
+  clientID: process.env.OIDC_CLIENT_ID,
+  clientSecret: process.env.OIDC_CLIENT_SECRET,
+  callbackURL: process.env.OIDC_CALLBACK_URL,
+  scope: 'openid profile'
+};
+
+// Middleware to ensure the user is authenticated via OIDC
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  req.session.originalUrl = req.originalUrl;
+  passport.authenticate('openidconnect')(req, res, next);
+}
+
+passport.use(new OidcStrategy(oidcConfig, (issuer, sub, profile, accessToken, refreshToken, done) => {
+  // Use profile info to check if the user is registered in your db
+  findOrCreateUser({ issuer, sub, profile }, (err, user) => {
+    return done(err, user);
+  });
+}));
+//coleman oidc
+
 const express = require("express")
-const basicAuth = require("basic-auth")
 const validator = require("validator")
+
 const {
   getValidatedHost,
   getValidatedPort,
@@ -35,15 +70,14 @@ function auth(req, res, next) {
   next()
 }
 
-// Scenario 1: No auth required, uses websocket authentication instead
-router.get("/", (req, res) => {
-  debug("router.get./: Accessed / route")
-  handleConnection(req, res)
-})
+router.get("/", ensureAuthenticated, (req, res) => {
+  debug("router.get./: Accessed / route");
+  handleConnection(req, res);
+});
 
 // Scenario 2: Auth required, uses HTTP Basic Auth
-router.get("/host/:host", auth, (req, res) => {
-  debug(`router.get.host: /ssh/host/${req.params.host} route`)
+router.get("/host/:host", ensureAuthenticated, (req, res) => {
+  debug(`router.get.host: /ssh/host/${req.params.host} route`);
 
   try {
     const host = getValidatedHost(req.params.host)
@@ -74,14 +108,14 @@ router.get("/host/:host", auth, (req, res) => {
 })
 
 // Clear credentials route
-router.get("/clear-credentials", (req, res) => {
-  req.session.sshCredentials = null
-  res.status(HTTP.OK).send(HTTP.CREDENTIALS_CLEARED)
-})
+router.get("/clear-credentials", ensureAuthenticated, (req, res) => {
+  req.session.sshCredentials = null;
+  res.status(HTTP.OK).send(HTTP.CREDENTIALS_CLEARED);
+});
 
-router.get("/force-reconnect", (req, res) => {
-  req.session.sshCredentials = null
-  res.status(HTTP.UNAUTHORIZED).send(HTTP.AUTH_REQUIRED)
-})
+router.get("/force-reconnect", ensureAuthenticated, (req, res) => {
+  req.session.sshCredentials = null;
+  res.status(HTTP.UNAUTHORIZED).send(HTTP.AUTH_REQUIRED);
+});
 
 module.exports = router

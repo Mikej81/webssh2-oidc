@@ -5,6 +5,8 @@ const express = require("express")
 const config = require("./config")
 const socketHandler = require("./socket")
 const sshRoutes = require("./routes")
+const oidcRoutes = require("./oidc-routes")
+const passport = require('passport');
 const { applyMiddleware } = require("./middleware")
 const { createServer, startServer } = require("./server")
 const { configureSocketIO } = require("./io")
@@ -28,8 +30,25 @@ function createApp() {
     // Apply middleware
     const { sessionMiddleware } = applyMiddleware(app, config)
 
+    //coleman oidc
+    app.use(passport.initialize());
+    app.use(passport.session());
+    //coleman oidc 
+
+    // app.get("/", (req, res) => {
+    //   if (req.isAuthenticated()) { // Check if the user is authenticated
+    //     const redirectUrl = req.session.originalUrl; // Use the original URL or a default
+    //     delete req.session.originalUrl; // Remove the original URL from session
+    //     res.redirect(redirectUrl);
+    //   } else {
+    //     res.redirect('/oidc/login'); // Redirect to login if not authenticated
+    //   }
+    // });
+
     // Serve static files from the webssh2_client module with a custom prefix
     app.use("/ssh/assets", express.static(clientPath))
+
+    app.use("/oidc", oidcRoutes)
 
     // Use the SSH routes
     app.use("/ssh", sshRoutes)

@@ -4,6 +4,7 @@
 const createDebug = require("debug")
 const session = require("express-session")
 const bodyParser = require("body-parser")
+const passport = require('passport');
 
 const debug = createDebug("webssh2:middleware")
 const { HTTP } = require("./constants")
@@ -68,6 +69,17 @@ function applyMiddleware(app, config) {
 
   return { sessionMiddleware }
 }
+
+passport.serializeUser((user, done) => {
+  done(null, user.id); // Adjust based on how you want to identify the user in the session
+});
+
+passport.deserializeUser((id, done) => {
+  User.findById(id, (err, user) => {
+    done(err, user);
+  });
+});
+
 
 module.exports = {
   applyMiddleware,

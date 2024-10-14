@@ -77,17 +77,6 @@ function applyMiddleware(app, config) {
   return { sessionMiddleware }
 }
 
-passport.serializeUser((user, done) => {
-  done(null, user.id); // Adjust based on how you want to identify the user in the session
-});
-
-passport.deserializeUser((id, done) => {
-  User.findById(id, (err, user) => {
-    done(err, user);
-  });
-});
-
-
 module.exports = {
   applyMiddleware,
   createSessionMiddleware,

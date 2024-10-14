@@ -9,7 +9,7 @@ const sshRoutes = require("./routes")
 
 var passport = require('passport');
 var Strategy = require('passport-openidconnect');
-const flash = require('connect-flash');
+flash = require('express-flash')
 const jwt = require('jsonwebtoken');
 
 const { applyMiddleware } = require("./middleware")
@@ -38,6 +38,8 @@ function createApp() {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    app.use(flash());
+
     passport.use(new Strategy({
       issuer: process.env.OIDC_ISSUER_URL,
       authorizationURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/auth`,
@@ -50,6 +52,9 @@ function createApp() {
       passReqToCallback: true
     }, function verify(issuer, profile, cb) {
       console.log("verifying...");
+      console.log("Access Token:", accessToken);
+      console.log("Refresh Token:", refreshToken);
+      console.log("Profile:", profile);
       findOrCreateUser({ issuer, profile }, (err, user) => {
         if (err) {
           console.error('Error during findOrCreateUser:', err);
@@ -74,14 +79,13 @@ function createApp() {
     // Use the SSH routes
     app.use("/ssh", ensureAuthenticated, sshRoutes)
 
-    // app.get('/callback', passport.authenticate('openidconnect', { keepSessionInfo: true, failureMessage: true, failWithError: true, successReturnToOrRedirect: '/' })
-    // );
-
     app.get('/callback',
       passport.authenticate('openidconnect', {
         failureMessage: true,
         failWithError: true,
+        failureFlash: true,
         //successRedirect: req.session.returnTo
+        //failureRedirect: '/login-failure'
       }), (req, res) => {
         // Redirect user back to the originally requested URL or default page
         const redirectUrl = req.session.returnTo || '/';
@@ -89,6 +93,10 @@ function createApp() {
         res.redirect(redirectUrl);
       });
 
+    app.get('/login-failure', (req, res) => {
+      console.log('Login failed:', req.flash('error'));  // Ensure flash messages are logged or displayed
+      res.send('Login Failure. Check logs for more details.');
+    });
 
     return { app: app, sessionMiddleware: sessionMiddleware }
   } catch (err) {
@@ -124,7 +132,6 @@ function initializeServer() {
 }
 
 function ensureAuthenticated(req, res, next) {
-  console.log("ensuring authenticated...");
   if (req.isAuthenticated()) {
     console.log("authenticated, move next...");
     next();

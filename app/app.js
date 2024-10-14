@@ -1,12 +1,17 @@
 // server
 // app/app.js
+require('dotenv').config();
 
 const express = require("express")
 const config = require("./config")
 const socketHandler = require("./socket")
 const sshRoutes = require("./routes")
-const oidcRoutes = require("./oidc-routes")
-const passport = require('passport');
+
+var passport = require('passport');
+var Strategy = require('passport-openidconnect');
+const flash = require('connect-flash');
+const jwt = require('jsonwebtoken');
+
 const { applyMiddleware } = require("./middleware")
 const { createServer, startServer } = require("./server")
 const { configureSocketIO } = require("./io")
@@ -30,18 +35,60 @@ function createApp() {
     // Apply middleware
     const { sessionMiddleware } = applyMiddleware(app, config)
 
-    //coleman oidc
     app.use(passport.initialize());
     app.use(passport.session());
-    //coleman oidc 
+
+    passport.use(new Strategy({
+      issuer: process.env.OIDC_ISSUER_URL,
+      authorizationURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/auth`,
+      tokenURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/token`,
+      userInfoURL: `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/userinfo`,
+      clientID: process.env.OIDC_CLIENT_ID,
+      clientSecret: process.env.OIDC_CLIENT_SECRET,
+      callbackURL: process.env.OIDC_CALLBACK_URL,
+      scope: 'openid profile',
+      passReqToCallback: true
+    }, function verify(issuer, profile, cb) {
+      console.log("verifying...");
+      findOrCreateUser({ issuer, profile }, (err, user) => {
+        if (err) {
+          console.error('Error during findOrCreateUser:', err);
+          return cb(err);
+        }
+        return done(null, user);  // Ensure user object is correctly passed
+      });
+    })
+    );
+
+    passport.serializeUser((user, next) => {
+      next(null, user);
+    });
+
+    passport.deserializeUser((obj, next) => {
+      next(null, obj);
+    });
 
     // Serve static files from the webssh2_client module with a custom prefix
     app.use("/ssh/assets", express.static(clientPath))
 
-    app.use("/oidc", oidcRoutes)
-
     // Use the SSH routes
-    app.use("/ssh", sshRoutes)
+    app.use("/ssh", ensureAuthenticated, sshRoutes)
+
+    // app.get('/callback', passport.authenticate('openidconnect', { keepSessionInfo: true, failureMessage: true, failWithError: true, successReturnToOrRedirect: '/' })
+    // );
+
+    app.get('/callback',
+      passport.authenticate('openidconnect', {
+        failureMessage: true,
+        failWithError: true,
+        //successRedirect: req.session.returnTo
+      }), (req, res) => {
+        // Redirect user back to the originally requested URL or default page
+        const redirectUrl = req.session.returnTo || '/';
+        //delete req.session.returnTo;  // Clear the saved URL to clean up the session
+        res.redirect(redirectUrl);
+      });
+
 
     return { app: app, sessionMiddleware: sessionMiddleware }
   } catch (err) {
@@ -73,6 +120,23 @@ function initializeServer() {
   } catch (err) {
     handleError(err)
     process.exit(1)
+  }
+}
+
+function ensureAuthenticated(req, res, next) {
+  console.log("ensuring authenticated...");
+  if (req.isAuthenticated()) {
+    console.log("authenticated, move next...");
+    next();
+  } else {
+    req.session.returnTo = req.originalUrl;
+    console.log("not authenticated, trying...");
+    passport.authenticate('openidconnect', {
+      keepSessionInfo: true,
+      failureMessage: true,
+      failWithError: true,
+      successRedirect: req.session.returnTo || '/ssh/'
+    })(req, res, next);
   }
 }
 

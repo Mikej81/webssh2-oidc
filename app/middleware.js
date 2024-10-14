@@ -19,7 +19,14 @@ function createSessionMiddleware(config) {
     secret: config.session.secret,
     resave: false,
     saveUninitialized: true,
-    name: config.session.name
+    name: config.session.name,
+    cookie: {
+      //secure: process.env.NODE_ENV === 'production', // Ensure secure is true in production for HTTPS
+      domain: '.myedgedemo.com', // Set the cookie domain to the highest level domain shared by both services
+      path: '/',
+      httpOnly: true,
+      sameSite: 'none' // Can be 'strict' for more stringent CSRF protection
+    }
   })
 }
 

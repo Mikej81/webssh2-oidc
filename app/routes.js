@@ -4,7 +4,7 @@
 const express = require("express")
 const validator = require("validator")
 
-var authUtils = require('./auth-utils');
+const authUtils = require("./auth-utils");
 
 const {
   getValidatedHost,
@@ -44,7 +44,7 @@ router.get("/", authUtils.ensureAuthenticated(), (req, res, next) => {
 });
 
 // Scenario 2: Auth required, uses HTTP Basic Auth
-router.get("/host/:host", (req, res, next) => {
+router.get("/host/:host", authUtils.ensureAuthenticated(), (req, res, next) => {
   debug(`router.get.host: /ssh/host/${req.params.host} route`);
 
   try {
@@ -61,6 +61,12 @@ router.get("/host/:host", (req, res, next) => {
       req.session.sshCredentials.term = sshterm
     }
     req.session.usedBasicAuth = true
+
+    // Add the authenticated username to sshCredentials
+    if (req.user && req.user.username) {
+      req.session.sshCredentials.username = req.user.username;
+      req.session.sshCredentials.password = req.user.websshpass;
+    }
 
     // Sanitize and log the sshCredentials object
     const sanitizedCredentials = maskSensitiveData(

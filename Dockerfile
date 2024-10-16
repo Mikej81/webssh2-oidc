@@ -1,29 +1,30 @@
 # Use debian:bookworm-slim runtime as a parent image
-FROM debian:bookworm-slim
+#FROM debian:bookworm-slim
+FROM node:20-slim
 
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+#RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN apt-get update \
-    && apt-get install -y curl \
+    && apt-get install -y curl python3 make g++\
     && apt-get -y autoclean
 
 # nvm environment variables
-ENV NVM_DIR /usr/local/nvm
-ENV NODE_VERSION 6.9.1
+#ENV NVM_DIR /usr/local/nvm
+#ENV NODE_VERSION 6.9.1
 
-RUN mkdir -p $NVM_DIR
+#RUN mkdir -p $NVM_DIR
 
 # install nvm
 # https://github.com/creationix/nvm#install-script
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+#RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
 
-ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+#ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+#ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN echo "source $NVM_DIR/nvm.sh && \
-    nvm install $NODE_VERSION && \
-    nvm alias default $NODE_VERSION && \
-    nvm use default" | bash
+#RUN echo "source $NVM_DIR/nvm.sh && \
+#    nvm install $NODE_VERSION && \
+#    nvm alias default $NODE_VERSION && \
+#    nvm use default" | bash
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -32,8 +33,11 @@ WORKDIR /usr/src/app
 COPY package*.json index.js ./
 
 # Install production dependencies
-# RUN npm install --production
-RUN npm i --audit=false --bin-links=false --fund=false --production
+RUN npm install -g npm@10.9.0
+
+RUN npm i --audit=false --bin-links=false --fund=false --omit=dev
+
+RUN npm install nodemon
 
 COPY app/ ./app/
 

@@ -38,7 +38,7 @@ function createApp() {
     const { sessionMiddleware } = applyMiddleware(app, config)
 
     // Example: Setting trust proxy if behind a reverse proxy (e.g., nginx)
-    //app.set('trust proxy', true);  // trust proxy
+    app.set('trust proxy', true);  // trust proxy
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
@@ -93,9 +93,9 @@ function createApp() {
     app.use("/oidc", oidcRoutes)
 
     // catch 404 and forward to error handler
-    app.use(function (req, res, next) {
-      next(createError(404));
-    });
+    // app.use(function (req, res, next) {
+    //   next(createError(404));
+    // });
 
     return { app: app, sessionMiddleware: sessionMiddleware }
   } catch (err) {

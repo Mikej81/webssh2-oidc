@@ -4,12 +4,15 @@
 const express = require("express")
 const validator = require("validator")
 
+var authUtils = require('./auth-utils');
+
 const {
   getValidatedHost,
   getValidatedPort,
   maskSensitiveData,
   validateSshTerm
 } = require("./utils")
+
 const handleConnection = require("./connectionHandler")
 const { createNamespacedDebug } = require("./logger")
 const { ConfigError, handleError } = require("./errors")
@@ -35,13 +38,13 @@ function auth(req, res, next) {
   next()
 }
 
-router.get("/", (req, res) => {
+router.get("/", authUtils.ensureAuthenticated(), (req, res, next) => {
   debug("router.get./: Accessed / route");
   handleConnection(req, res);
 });
 
 // Scenario 2: Auth required, uses HTTP Basic Auth
-router.get("/host/:host", (req, res) => {
+router.get("/host/:host", (req, res, next) => {
   debug(`router.get.host: /ssh/host/${req.params.host} route`);
 
   try {
@@ -57,7 +60,7 @@ router.get("/host/:host", (req, res) => {
     if (req.query.sshterm) {
       req.session.sshCredentials.term = sshterm
     }
-    //req.session.usedBasicAuth = true
+    req.session.usedBasicAuth = true
 
     // Sanitize and log the sshCredentials object
     const sanitizedCredentials = maskSensitiveData(

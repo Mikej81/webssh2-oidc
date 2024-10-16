@@ -3,8 +3,8 @@
 
 const createDebug = require("debug")
 const session = require("express-session")
+var cookieSession = require('cookie-session');
 const bodyParser = require("body-parser")
-const passport = require('passport');
 
 const debug = createDebug("webssh2:middleware")
 const { HTTP } = require("./constants")
@@ -18,14 +18,15 @@ function createSessionMiddleware(config) {
   return session({
     secret: config.session.secret,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     name: config.session.name,
     cookie: {
-      //secure: process.env.NODE_ENV === 'production', // Ensure secure is true in production for HTTPS
-      domain: '.myedgedemo.com', // Set the cookie domain to the highest level domain shared by both services
+      secure: process.env.NODE_ENV === 'production', // Ensure secure is true in production for HTTPS
+      domain: process.env.COOKIE_DOMAIN, // Set the cookie domain to the highest level domain shared by both services
       path: '/',
       httpOnly: true,
-      sameSite: 'none' // Can be 'strict' for more stringent CSRF protection
+      sameSite: 'none', // Can be 'strict' for more stringent CSRF protection
+      maxAge: 3600000
     }
   })
 }

@@ -25,7 +25,7 @@ function createSessionMiddleware(config) {
       domain: process.env.COOKIE_DOMAIN, // Set the cookie domain to the highest level domain shared by both services
       path: '/',
       httpOnly: true,
-      sameSite: 'none', // Can be 'strict' for more stringent CSRF protection
+      sameSite: 'None', // Can be 'strict' for more stringent CSRF protection
       maxAge: 3600000
     }
   })

@@ -63,14 +63,10 @@ router.get('/callback', function (req, res, next) {
         }
         const returnTo = req.session.returnTo;
 
-        // Log the session to check if returnTo is available
-        console.log("Session content:", req.session.returnTo);
         req.logIn(user, function (err) {
             if (err) {
                 return next(err);  // Handle login error
             }
-            // Redirect to the returnTo path or fallback to default
-            console.log("Session content 2: ", returnTo);
             const redirectUrl = returnTo || req.session.returnTo;
             delete req.session.returnTo;  // Clean up session
             return res.redirect(redirectUrl);

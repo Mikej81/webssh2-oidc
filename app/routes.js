@@ -64,8 +64,12 @@ router.get("/host/:host", authUtils.ensureAuthenticated(), (req, res, next) => {
 
     // Add the authenticated username to sshCredentials
     if (req.user && req.user.username) {
-      req.session.sshCredentials.username = req.user.username;
-      req.session.sshCredentials.password = req.user.websshpass;
+      req.session.sshCredentials = {
+        username: req.user.username,
+        password: req.user.websshpass // We don't sanitize the password as it might contain special characters
+      }
+      //req.session.sshCredentials.username = req.user.username;
+      //req.session.sshCredentials.password = req.user.websshpass;
     }
 
     // Sanitize and log the sshCredentials object

@@ -9,7 +9,6 @@ const { createNamespacedDebug } = require("./logger")
 const { HTTP } = require("./constants")
 
 const debug = createNamespacedDebug("oidc")
-const router = express.Router()
 
 passport.use(new KeyCloakStrategy({
     issuer: process.env.OIDC_ISSUER_URL,
@@ -45,37 +44,53 @@ passport.serializeUser(function (user, cb) {
 });
 
 passport.deserializeUser(function (user, cb) {
-    //console.log("[deserialize]", user);
+    debug(`[deserialize] user: ${user}`);
     process.nextTick(function () {
         return cb(null, user);
     });
+});
+
+const router = express.Router()
+
+router.get('/undefined', (req, res, next) => {
+    debug(`router.get.host: /undefined route`);
+    console.log(req.session);
+    res.send(req.headers);
+});
+router.get('/login-failure', (req, res, next) => {
+    debug(`router.get.host: /login-failure route`);
+    console.log(req.session);
+    res.send(req.headers);
 });
 
 router.get('/login', passport.authenticate('keycloak'));
 
 router.get('/callback', function (req, res, next) {
     passport.authenticate('keycloak', function (err, user, info) {
+        debug(`router.get.host: /callback authenticate route`);
         if (err) {
             return next(err);  // Handle errors
         }
         if (!user) {
-            return res.redirect('/login-failure');  // If no user is authenticated
+            return res.redirect('/oidc/login-failure');  // If no user is authenticated
         }
-        const returnTo = req.session.returnTo;
+        console.log(req.session.returnTo);
+        const returnTo = req.session.returnTo || "/ssh/";
 
         req.logIn(user, function (err) {
             if (err) {
                 return next(err);  // Handle login error
             }
             const redirectUrl = returnTo || req.session.returnTo;
-            delete req.session.returnTo;  // Clean up session
+            //delete req.session.returnTo;  // Clean up session
+            debug(`[callback] redirect ${redirectUrl}, callback url: ${process.env.OIDC_CALLBACK_URL}`);
             return res.redirect(redirectUrl);
         });
     })(req, res, next);
 });
 
-
 router.post('/logout', function (req, res, next) {
+    debug(`router.get.host: /logout route`);
     req.logout();
     res.redirect('/');
 });

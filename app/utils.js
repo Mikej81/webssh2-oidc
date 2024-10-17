@@ -41,6 +41,7 @@ function deepMerge(target, source) {
  * @returns {string} - The original IP or escaped hostname.
  */
 function getValidatedHost(host) {
+  debug("getValidatedHost: input: %O", host)
   let validatedHost
 
   if (validator.isIP(host)) {
@@ -90,13 +91,41 @@ function getValidatedPort(portInput) {
  * @returns {boolean} - Returns true if the credentials are valid, otherwise false.
  */
 function isValidCredentials(creds) {
-  return !!(
-    creds &&
-    typeof creds.username === "string" &&
-    typeof creds.password === "string" &&
-    typeof creds.host === "string" &&
-    typeof creds.port === "number"
-  )
+  // return !!(
+  //   creds &&
+  //   typeof creds.username === "string" &&
+  //   typeof creds.password === "string" &&
+  //   typeof creds.host === "string" &&
+  //   typeof creds.port === "number"
+  // )
+  debug(`isValidCredentials: creds = ${JSON.stringify(creds)}`);
+
+  if (!creds) {
+    debug("isValidCredentials: Credentials object is missing.");
+    return false;
+  }
+
+  if (typeof creds.username !== "string") {
+    debug(`isValidCredentials: Invalid username: ${creds.username}`);
+    return false;
+  }
+
+  if (typeof creds.password !== "string") {
+    debug(`isValidCredentials: Invalid password: ${creds.password}`);
+    return false;
+  }
+
+  if (typeof creds.host !== "string") {
+    debug(`isValidCredentials: Invalid host: ${creds.host}`);
+    return false;
+  }
+
+  if (typeof creds.port !== "number") {
+    debug(`isValidCredentials: Invalid port: ${creds.port}`);
+    return false;
+  }
+
+  return true;
 }
 
 /**

@@ -55,22 +55,21 @@ router.get("/host/:host", authUtils.ensureAuthenticated(), (req, res, next) => {
     const sshterm = validateSshTerm(req.query.sshterm)
 
     req.session.sshCredentials = req.session.sshCredentials || {}
-    req.session.sshCredentials.host = host
-    req.session.sshCredentials.port = port
-    if (req.query.sshterm) {
-      req.session.sshCredentials.term = sshterm
-    }
-    req.session.usedBasicAuth = true
 
     // Add the authenticated username to sshCredentials
     if (req.user && req.user.username) {
       req.session.sshCredentials = {
         username: req.user.username,
-        password: req.user.websshpass // We don't sanitize the password as it might contain special characters
+        password: req.user.websshpass // don't sanitize the password as it might contain special characters
       }
-      //req.session.sshCredentials.username = req.user.username;
-      //req.session.sshCredentials.password = req.user.websshpass;
     }
+
+    req.session.sshCredentials.host = host
+    req.session.sshCredentials.port = port
+    if (req.query.sshterm) {
+      req.session.sshCredentials.term = sshterm
+    }
+    //req.session.usedBasicAuth = true
 
     // Sanitize and log the sshCredentials object
     const sanitizedCredentials = maskSensitiveData(

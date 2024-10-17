@@ -21,8 +21,8 @@ function createSessionMiddleware(config) {
     saveUninitialized: false,
     name: config.session.name,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Ensure secure is true in production for HTTPS
-      domain: process.env.COOKIE_DOMAIN, // Set the cookie domain to the highest level domain shared by both services
+      secure: process.env.SECURE_COOKIE === 'production', //process.env.NODE_ENV === 'production', // Ensure secure is true in production for HTTPS
+      //domain: process.env.COOKIE_DOMAIN, // Set the cookie domain to the highest level domain shared by both services
       path: '/',
       httpOnly: true,
       sameSite: 'None', // Can be 'strict' for more stringent CSRF protection

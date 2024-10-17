@@ -30,17 +30,6 @@ function handleFileRead(filePath, config, res) {
 }
 
 /**
- * Convert the username and password into a Basic Auth header.
- * @param {string} username - The username for Basic Auth.
- * @param {string} password - The password for Basic Auth.
- * @returns {string} - The Basic Auth header value.
- */
-function getBasicAuthHeader(username, password) {
-  const credentials = `${username}:${password}`;
-  return `Basic ${Buffer.from(credentials).toString("base64")}`;
-}
-
-/**
  * Handle the connection request and send the modified client HTML.
  * @param {Object} req - The Express request object.
  * @param {Object} res - The Express response object.
@@ -56,23 +45,22 @@ function handleConnection(req, res) {
     "client",
     "public"
   )
-
-  // Retrieve the credentials from the session
+  // Retrieve username and password from session or request
   const { username, password } = req.session.sshCredentials || {};
 
   if (!username || !password) {
-    return res.status(401).send("Unauthorized: Missing SSH credentials");
+    debug("Username or password missing from session.");
+    return res.status(401).send("Unauthorized: Missing credentials.");
   }
-
-  // Create the Basic Auth header
-  const basicAuthHeader = getBasicAuthHeader(username, password);
-
 
   const tempConfig = {
     socket: {
       url: `${req.protocol}://${req.get("host")}`,
       path: "/ssh/socket.io",
-      authHeader: basicAuthHeader,
+      auth: {
+        username: username,
+        password: password
+      }
     },
     autoConnect: req.path.startsWith("/host/") // Automatically connect if path starts with /host/
   }

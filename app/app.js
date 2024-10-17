@@ -5,7 +5,7 @@ require('dotenv').config();
 var createError = require('http-errors');
 var cookieParser = require('cookie-parser');
 
-var csrf = require('csurf');
+//var csrf = require('csurf');
 
 const express = require("express")
 const config = require("./config")
@@ -38,7 +38,7 @@ function createApp() {
     const { sessionMiddleware } = applyMiddleware(app, config)
 
     // Example: Setting trust proxy if behind a reverse proxy (e.g., nginx)
-    app.set('trust proxy', true);  // trust proxy
+    //app.set('trust proxy', true);  // trust proxy
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
@@ -49,7 +49,7 @@ function createApp() {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    app.use(csrf());
+    //app.use(csrf());
 
     app.use(passport.authenticate('session'));
 
@@ -61,10 +61,10 @@ function createApp() {
       next();
     });
 
-    app.use(function (req, res, next) {
-      res.locals.csrfToken = req.csrfToken();
-      next();
-    });
+    // app.use(function (req, res, next) {
+    //   res.locals.csrfToken = req.csrfToken();
+    //   next();
+    // });
 
     // Resolve the correct path to the webssh2_client module
     const clientPath = DEFAULTS.WEBSSH2_CLIENT_PATH
